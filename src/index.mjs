@@ -1,4 +1,18 @@
 import { h, Component, render } from 'https://unpkg.com/preact?module';
+import htm from 'https://unpkg.com/htm?module';
+
+const html = htm.bind(h);
+function App (props) {
+    return html`
+        <div>
+            ${props.cpus.map((cpu) => {
+               return html`
+                   <div>${cpu.toFixed(2)}% usage</div>
+               `; 
+            })}    
+        </div>
+    `;
+}
 
 
 setInterval(async () => {
@@ -11,5 +25,5 @@ setInterval(async () => {
 
     const app = h('pre', null, JSON.stringify(json, null, 2));
 
-    render(app, document.body);
+    render(html`<${App} cpus=${json}></${App}>`, document.body);
     }, 1000);
