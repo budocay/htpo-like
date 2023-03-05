@@ -1,8 +1,8 @@
+use axum::extract::State;
+use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router, Server};
 use std::sync::{Arc, Mutex};
-use axum::extract::State;
-use axum::response::{Html, IntoResponse, Response};
 use sysinfo::{CpuExt, System, SystemExt};
 
 #[tokio::main]
@@ -10,8 +10,11 @@ async fn main() {
     let router = Router::new()
         .route("/", get(root_get))
         .route("/index.mjs", get(indexmjs_get))
+        .route("/index.css", get(indexcss_get))
         .route("/api/cpus", get(cpus_get))
-        .with_state(AppState { sys: Arc::new(Mutex::new(System::new())) });
+        .with_state(AppState {
+            sys: Arc::new(Mutex::new(System::new())),
+        });
 
     let server = Server::bind(&"0.0.0.0:8082".parse().unwrap()).serve(router.into_make_service());
     let addr = server.local_addr();
@@ -24,7 +27,6 @@ struct AppState {
     sys: Arc<Mutex<System>>,
 }
 
-
 #[axum::debug_handler]
 async fn root_get() -> impl IntoResponse {
     let markup = tokio::fs::read_to_string("src/index.html").await.unwrap();
@@ -35,13 +37,25 @@ async fn root_get() -> impl IntoResponse {
 async fn indexmjs_get() -> impl IntoResponse {
     let markup = tokio::fs::read_to_string("src/index.mjs").await.unwrap();
 
-    Response::builder().header("content-type", "application/javascript;charset=utf-8").body(markup).unwrap()
+    Response::builder()
+        .header("content-type", "application/javascript;charset=utf-8")
+        .body(markup)
+        .unwrap()
+}
+
+#[axum::debug_handler]
+async fn indexcss_get() -> impl IntoResponse {
+    let markup = tokio::fs::read_to_string("src/index.css").await.unwrap();
+
+    Response::builder()
+        .header("content-type", "text/css;charset=utf-8")
+        .body(markup)
+        .unwrap()
 }
 
 #[axum::debug_handler]
 async fn cpus_get(State(state): State<AppState>) -> impl IntoResponse {
-
-    let mut sys =state.sys.lock().unwrap();
+    let mut sys = state.sys.lock().unwrap();
     // FIXME: Find a solution please
     sys.refresh_cpu();
 
