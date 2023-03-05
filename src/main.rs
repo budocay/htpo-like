@@ -1,5 +1,5 @@
 use axum::routing::get;
-use axum::{Router, Server};
+use axum::{Json, Router, Server};
 use std::sync::{Arc, Mutex};
 use axum::extract::State;
 use axum::response::{Html, IntoResponse};
@@ -23,23 +23,18 @@ struct AppState {
     sys: Arc<Mutex<System>>,
 }
 
-async fn root_get(State(state): State<AppState>) -> String {
+async fn root_get() -> String {
     "HEllo".to_string()
 }
 
-async fn cpus_get(State(state): State<AppState>) -> String {
-    use std::fmt::Write;
-
-    let mut s: String = String::new();
+#[axum::debug_handler]
+async fn cpus_get(State(state): State<AppState>) -> impl IntoResponse {
 
     let mut sys =state.sys.lock().unwrap();
-
+    // FIXME: Find a solution please
     sys.refresh_cpu();
-    for (i, cpu) in sys.cpus().iter().enumerate() {
-        let i = i + 1;
 
-        let usage = cpu.cpu_usage();
-        writeln!(&mut s, "CPU {i} {usage}%").unwrap();
-    }
-    s
+    let v: Vec<_> = sys.cpus().iter().map(|cpu| cpu.cpu_usage()).collect();
+
+    Json(v)
 }
