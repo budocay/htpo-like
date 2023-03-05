@@ -23,8 +23,11 @@ struct AppState {
     sys: Arc<Mutex<System>>,
 }
 
-async fn root_get() -> String {
-    "HEllo".to_string()
+
+#[axum::debug_handler]
+async fn root_get() -> impl IntoResponse {
+    let markup = tokio::fs::read_to_string("src/index.html").await.unwrap();
+    Html(markup)
 }
 
 #[axum::debug_handler]
