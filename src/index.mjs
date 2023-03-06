@@ -29,4 +29,4 @@ let update = async () => {
 
 }
 update()
-setInterval(update, 1000);
+setInterval(update, 200);
