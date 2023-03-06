@@ -34,3 +34,7 @@ body {
     bottom: 0;
     transition: width 0.1s;
 }
+
+h2 {
+    background: white;
+}
