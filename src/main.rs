@@ -1,4 +1,5 @@
-use axum::extract::State;
+use axum::extract::ws::{Message, WebSocket};
+use axum::extract::{State, WebSocketUpgrade};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router, Server};
@@ -14,6 +15,7 @@ async fn main() {
         .route("/index.mjs", get(indexmjs_get))
         .route("/index.css", get(indexcss_get))
         .route("/api/cpus", get(cpus_get))
+        .route("/realtime/cpus", get(realtime_cpus_get))
         .with_state(app_state.clone());
 
     // Update CPU usage in bg
@@ -74,4 +76,22 @@ async fn cpus_get(State(state): State<AppState>) -> impl IntoResponse {
     let locked_elapsed = lock_start.elapsed().as_millis();
     println!("Lock time: {}ms", locked_elapsed);
     Json(v)
+}
+
+#[axum::debug_handler]
+async fn realtime_cpus_get(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |ws: WebSocket| async {
+        realtime_cpus_stream(state, ws).await;
+    })
+}
+
+async fn realtime_cpus_stream(app_state: AppState, mut ws: WebSocket) {
+    loop {
+        let payload = serde_json::to_string(&*app_state.cpus.lock().unwrap()).unwrap();
+        ws.send(Message::Text(payload)).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
 }

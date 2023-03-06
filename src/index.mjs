@@ -18,7 +18,7 @@ function App (props) {
 }
 
 
-let update = async () => {
+/*let update = async () => {
     let response = await fetch("/api/cpus");
 
     if (response.status !== 200) {
@@ -30,3 +30,15 @@ let update = async () => {
 }
 update()
 setInterval(update, 200);
+*/
+
+let url = new URL("realtime/cpus", window.location.href);
+url.protocol = url.protocol.replace("http", "ws");
+
+let ws = new WebSocket(url.href);
+ws.onmessage = (ev) => {
+    console.log(JSON.parse(ev.data));
+    let json = JSON.parse(ev.data)
+    render(html`<${App} cpus=${json}></${App}>`, document.body);
+
+};
